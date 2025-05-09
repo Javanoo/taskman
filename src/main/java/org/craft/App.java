@@ -7,7 +7,6 @@ import java.util.Scanner;
 
 public class App {
     TaskManService service = new TaskManService();
-
     public App(){
      service.start();
     }
