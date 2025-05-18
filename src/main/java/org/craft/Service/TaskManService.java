@@ -16,6 +16,7 @@ public class TaskManService {
     public ArrayList<Task> pendingDbTasks = new ArrayList<>();
     public HashMap<Integer, Task> currentTaskMap = new HashMap<>();
     public ExecutorService threadPool = Executors.newCachedThreadPool();
+    public static final TaskManLog logger = new TaskManLog();
 
     public TaskManService(){
         try {
@@ -27,10 +28,11 @@ public class TaskManService {
                 for (Task task : currentDbTasks) {
                     currentTaskMap.put(task.getId(), task);
                 }
-
+            logger.inform("TaskManService initialised");
         } catch (ConnectException e) {
-            System.out.println("Failed to connect to database.");
+            logger.error("Failed to connect to database.");
         }catch (Exception e) {
+            logger.error("something went very bad.");
             throw new RuntimeException(e);
         }
     }
@@ -39,7 +41,9 @@ public class TaskManService {
         try {
             currentDbTasks.clear();
             currentDbTasks = (taskManMysqlDb.getTasks() == null) ? new LinkedHashSet<>() : taskManMysqlDb.getTasks();
+            logger.inform("updated database.");
         } catch (SQLException e) {
+            logger.error("failed to update database.");
             throw new RuntimeException(e);
         }
     }
@@ -54,11 +58,11 @@ public class TaskManService {
                 task.setPriority(input.nextInt());
 
                 taskManMysqlDb.addTasks(task);
-                System.out.println("Task [" + task.getId() + "] " + task.getTitle() + " added.");
                 currentTaskMap.put(task.getId(), task);
+                logger.inform("Task [" + task.getId() + "] " + task.getTitle() + " added.");
                 refreshCurrentDb();
             } catch (Exception e) {
-                System.out.println("Failed to add task to Database." + e);
+                logger.error("Failed to add task to Database." + e);
             }
         }
     }
@@ -83,14 +87,18 @@ public class TaskManService {
                     case 1 : {
                         System.out.print("Enter title : ");
                         toEdit.setTitle(input.nextLine());
+                        logger.inform("editing task...");
                         taskManMysqlDb.editTask(toEdit);
+                        logger.inform("task edited.");
                         System.out.println("task edited");
                         break;
                     }
                     case 2 : {
                         System.out.print("Set priority [0 low, 1 normal, 2 high] : ");
                         toEdit.setPriority(input.nextInt());
+                        logger.inform("editing task.");
                         taskManMysqlDb.editTask(toEdit);
+                        logger.inform("task edited.");
                         System.out.println("task edited");
                         break;
                     }
@@ -99,7 +107,9 @@ public class TaskManService {
                         String doneChoice = input.next();
                         if(doneChoice.charAt(0) == 'y' || doneChoice.charAt(0) == 'n') {
                             toEdit.setDone((doneChoice.charAt(0) == 'y'));
+                            logger.inform("editing task.");
                             taskManMysqlDb.editTask(toEdit);
+                            logger.inform("task edited.");
                             System.out.println("task edited");
                             break;
                         }
@@ -114,7 +124,9 @@ public class TaskManService {
                         String doneChoice = input.next();
                         if(doneChoice.charAt(0) == 'y' || doneChoice.charAt(0) == 'n') {
                             toEdit.setDone((doneChoice.charAt(0) == 'y'));
+                            logger.inform("editing task.");
                             taskManMysqlDb.editTask(toEdit);
+                            logger.inform("task edited.");
                             System.out.println("task edited");
                             break;
                         }
@@ -127,7 +139,7 @@ public class TaskManService {
                 refreshCurrentDb();
 
             } catch (Exception e) {
-                System.out.println("Failed to edit task.");
+                logger.error("Failed to edit task.");
             }
         }
 
@@ -143,16 +155,18 @@ public class TaskManService {
                 int taskChoice = Integer.parseInt(input.nextLine().strip());
                 Task toDelete = currentTaskMap.get(taskChoice);
 
+                logger.inform("deleting task [" + toDelete.getId() + "]. ");
                 taskManMysqlDb.deleteTask(toDelete);
                 refreshCurrentDb();
             } catch (Exception e) {
-                System.out.println("Failed to delete task.");
+                logger.error("Failed to delete task.");
             }
         }
     }
 
     public void viewTasks(){
         System.out.println("Showing all(" + currentDbTasks.size()+ ") tasks " );
+        logger.inform("viewing tasks ... ");
         for(Task task : currentDbTasks){
             System.out.println(task);
         }
@@ -175,12 +189,14 @@ public class TaskManService {
                     deleteTaskFromDb();
                 else if (action == 4)
                     viewTasks();
-                else if (action == 5)
+                else if (action == 5) {
+                    logger.inform("System closed at [" + new Date() + "].");
+                    System.out.println("bye!");
                     run = false;
-                else
+                } else
                     System.out.println("Choose from the options a number (i.e. 1)");
             } catch (RuntimeException e) {
-                System.out.println("Choose a number from the options.");
+                logger.inform("Choose a number from the options.");
             }
         }
     }
